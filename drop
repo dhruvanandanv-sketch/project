@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drive Drop | Interactive Investor Portal</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+
+    <!-- REQUIRED PLACEHOLDERS -->
+    <!-- Chosen Palette: Warm Neutrals & Automotive Professional. Background: Stone-50 (Paper), Text: Slate-800, Accents: Burnt Orange (Action) and Slate Blue (Trust). -->
+    
+    <!-- Application Structure Plan: 
+         The app is structured as a "Vertical Narrative Dashboard." 
+         1. Sidebar Navigation: Allows non-linear exploration but suggests a logical flow (Vision -> Product -> Market -> Financials -> Future).
+         2. Dynamic Content Area: Prevents page reloads, keeping the user immersed.
+         3. Interactive Cards & Charts: Users must click or hover to reveal details, simulating the "discovery" process of due diligence. 
+         4. Why this structure? Pitch decks are often static. This structure turns the pitch into a functional app, proving the team's digital competence while making dense business data (market analysis, financials) digestible via interaction.
+    -->
+
+    <!-- Visualization & Content Choices:
+         1. Overview (Mission/Vision): Text Cards + Hover Effects. Goal: Inform. Justification: Needs impact and readability.
+         2. Product (Service Flow): Interactive Step-Process (CSS/JS). Goal: Explain. Justification: Shows the "Convenience" value prop visually without SVGs.
+         3. Market (Competitors): Radar Chart (Chart.js). Goal: Compare. Justification: Visualizes Drive Drop's strengths (Convenience/Price) vs. Dealerships/Local Mechanics effectively.
+         4. Financials (Projections): Line & Bar Combination Chart. Goal: Forecast. Justification: Visualizes the "20% Annual Growth" and "50% Customer Base Increase" targets found in the report.
+         5. Future (Milestones): Interactive Timeline. Goal: Roadmap. Justification: Breaks down the 5-year plan (App, Expansion) into digestible milestones.
+    -->
+
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #fafaf9; /* Tailwind stone-50 */
+            color: #1e293b; /* Tailwind slate-800 */
+        }
+        
+        h1, h2, h3 {
+            font-family: 'Playfair Display', serif;
+        }
+
+        /* Chart Container Strict Styling */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            height: 350px; /* Base height */
+            max-height: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        @media (max-width: 640px) {
+            .chart-container {
+                height: 300px;
+            }
+        }
+
+        /* Custom Scrollbar for sleek look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+
+        .nav-item.active {
+            background-color: #fca5a5; /* Red-200 tint */
+            background-color: rgba(249, 115, 22, 0.1); /* Orange tint */
+            border-right: 4px solid #ea580c; /* Orange-600 */
+            color: #ea580c;
+            font-weight: 600;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Interactive Card Styling */
+        .info-card {
+            transition: all 0.3s ease;
+            border: 1px solid #e7e5e4;
+        }
+        .info-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-color: #fdba74;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col md:flex-row overflow-hidden">
+
+    <!-- Mobile Header -->
+    <header class="md:hidden bg-white border-b border-stone-200 p-4 flex justify-between items-center z-20">
+        <div class="font-serif text-xl font-bold text-slate-800">Drive Drop</div>
+        <button id="menu-btn" class="text-slate-600 focus:outline-none">
+            <span class="text-2xl">☰</span>
+        </button>
+    </header>
+
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar" class="transform -translate-x-full md:translate-x-0 fixed md:relative z-10 w-64 h-full bg-white border-r border-stone-200 flex flex-col transition-transform duration-300 ease-in-out shadow-lg md:shadow-none">
+        <div class="p-8 hidden md:block">
+            <h1 class="font-serif text-2xl font-bold text-slate-900 tracking-tight">Drive Drop</h1>
+            <p class="text-xs text-orange-600 font-semibold tracking-widest uppercase mt-1">Investor Portal</p>
+        </div>
+
+        <nav class="flex-1 px-4 space-y-2 mt-4 md:mt-0">
+            <button onclick="navigate('overview')" class="nav-item w-full text-left px-4 py-3 rounded-lg text-slate-600 hover:bg-orange-50 transition-colors flex items-center gap-3 active" data-target="overview">
+                <span>🎯</span> Overview
+            </button>
+            <button onclick="navigate('product')" class="nav-item w-full text-left px-4 py-3 rounded-lg text-slate-600 hover:bg-orange-50 transition-colors flex items-center gap-3" data-target="product">
+                <span>🔧</span> The Solution
+            </button>
+            <button onclick="navigate('market')" class="nav-item w-full text-left px-4 py-3 rounded-lg text-slate-600 hover:bg-orange-50 transition-colors flex items-center gap-3" data-target="market">
+                <span>📊</span> Market Analysis
+            </button>
+            <button onclick="navigate('financials')" class="nav-item w-full text-left px-4 py-3 rounded-lg text-slate-600 hover:bg-orange-50 transition-colors flex items-center gap-3" data-target="financials">
+                <span>📈</span> Financial Plan
+            </button>
+            <button onclick="navigate('future')" class="nav-item w-full text-left px-4 py-3 rounded-lg text-slate-600 hover:bg-orange-50 transition-colors flex items-center gap-3" data-target="future">
+                <span>🚀</span> Future Roadmap
+            </button>
+        </nav>
+
+        <div class="p-6 border-t border-stone-100">
+            <div class="bg-stone-100 rounded-lg p-4">
+                <p class="text-xs text-stone-500 font-semibold">Leadership</p>
+                <p class="text-sm font-bold text-slate-800 mt-1">Morla kireety & Dhruvanandan V</p>
+                <p class="text-xs text-slate-600">Joint CEOs</p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 bg-stone-50 overflow-y-auto relative h-full p-6 md:p-10" id="main-content">
+        <!-- Dynamic content will be injected here -->
+    </main>
+
+    <!-- Script for Logic and Data -->
+    <script>
+        // --- DATA STORE (Based on Source Report) ---
+        const reportData = {
+            overview: {
+                title: "Redefining Vehicle Maintenance",
+                intro: "Drive Drop is poised to revolutionize the automotive service industry. This section outlines our core philosophy and the foundation of our business model.",
+                mission: "To redefine the vehicle servicing experience by providing customers with a convenient and seamless service that takes the hassle out of vehicle maintenance.",
+                vision: "To become the gold standard in the vehicle servicing industry, revolutionizing the way people approach vehicle maintenance.",
+                founders: "Founded by experienced entrepreneurs and automotive experts. Led by Morla kireety and Dhruvanandan V, combining youthful vision with seasoned industry professionalism."
+            },
+            product: {
+                title: "The Convenience Revolution",
+                intro: "Our product is not just servicing; it is the gift of time. We bridge the gap between busy car owners and high-quality maintenance through a seamless logistics layer.",
+                steps: [
+                    { icon: "📱", title: "Booking", desc: "User books service via platform from home/office." },
+                    { icon: "🚙", title: "Pick-up", desc: "Our team picks up the vehicle from the customer's doorstep." },
+                    { icon: "🛠️", title: "Service", desc: "Complete vehicle servicing at certified hubs." },
+                    { icon: "🏠", title: "Drop-off", desc: "Vehicle delivered back to the customer's location." }
+                ],
+                offerings: ["Doorstep Logistics", "Complete Servicing", "Detailing (Future)", "Roadside Assist (Future)"]
+            },
+            market: {
+                title: "Market Landscape & Strategy",
+                intro: "The automotive industry is competitive, but fragmented. Drive Drop identifies a clear gap between expensive dealerships and unorganized local mechanics.",
+                competitorData: {
+                    labels: ['Convenience', 'Price Affordability', 'Quality Assurance', 'Transparency', 'Speed'],
+                    datasets: [
+                        {
+                            label: 'Drive Drop',
+                            data: [95, 80, 90, 90, 85],
+                            backgroundColor: 'rgba(234, 88, 12, 0.2)',
+                            borderColor: 'rgba(234, 88, 12, 1)',
+                            pointBackgroundColor: 'rgba(234, 88, 12, 1)',
+                        },
+                        {
+                            label: 'Auth. Dealerships',
+                            data: [40, 30, 95, 70, 50],
+                            backgroundColor: 'rgba(100, 116, 139, 0.2)',
+                            borderColor: 'rgba(100, 116, 139, 1)',
+                            pointBackgroundColor: 'rgba(100, 116, 139, 1)',
+                        },
+                        {
+                            label: 'Local Mechanic',
+                            data: [60, 90, 50, 40, 70],
+                            backgroundColor: 'rgba(148, 163, 184, 0.1)',
+                            borderColor: 'rgba(148, 163, 184, 0.5)',
+                            pointBackgroundColor: 'rgba(148, 163, 184, 1)',
+                        }
+                    ]
+                }
+            },
+            financials: {
+                title: "Financial Outlook & Growth",
+                intro: "Our financial projections are robust, driven by an aggressive customer acquisition strategy and high retention rates. We aim for sustainable scaling.",
+                metrics: [
+                    { label: "Annual Revenue Growth", value: "20%+", desc: "Projected annual increase" },
+                    { label: "Customer Base", value: "+50%", desc: "Target increase via marketing" },
+                    { label: "Service Area", value: "5 Cities", desc: "Expansion goal" }
+                ],
+                chartData: {
+                    labels: ['Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5'],
+                    revenue: [100, 120, 145, 175, 210], // Simulated curve based on 20% annual growth
+                    customers: [500, 750, 1125, 1700, 2500] // Simulated based on 50% target strategies
+                }
+            },
+            future: {
+                title: "Future Plans & Milestones",
+                intro: "We are not stopping at servicing. Our roadmap includes geographic expansion, digital product launches, and strategic B2B partnerships.",
+                milestones: [
+                    { year: "Phase 1", title: "Market Penetration", desc: "Establish dominance in home city. Refine logistics." },
+                    { year: "Phase 2", title: "Mobile App Launch", desc: "Launch dedicated app for booking/tracking (Convenience upgrade)." },
+                    { year: "Phase 3", title: "B2B Partnerships", desc: "Partner with 3+ Local Car Dealerships for outsourced logistics." },
+                    { year: "Phase 4", title: "Geographic Expansion", desc: "Expand service area to 5 neighboring cities/regions." },
+                    { year: "Phase 5", title: "Service Diversification", desc: "Add Roadside Assistance and Detailing verticals." }
+                ]
+            }
+        };
+
+        // --- CHART CONFIGURATIONS ---
+        let marketChartInstance = null;
+        let financialChartInstance = null;
+
+        function renderOverview() {
+            const content = `
+                <div class="fade-in max-w-4xl mx-auto">
+                    <header class="mb-10">
+                        <h2 class="text-3xl md:text-4xl font-serif font-bold text-slate-900 mb-4">${reportData.overview.title}</h2>
+                        <p class="text-lg text-slate-600 leading-relaxed">${reportData.overview.intro}</p>
+                    </header>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+                        <div class="info-card bg-white p-8 rounded-xl relative overflow-hidden group">
+                            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <span class="text-6xl">🎯</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-slate-800 mb-3">Our Mission</h3>
+                            <p class="text-slate-600">${reportData.overview.mission}</p>
+                        </div>
+                        <div class="info-card bg-white p-8 rounded-xl relative overflow-hidden group">
+                            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <span class="text-6xl">🔭</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-slate-800 mb-3">Our Vision</h3>
+                            <p class="text-slate-600">${reportData.overview.vision}</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-orange-50 border border-orange-100 rounded-xl p-8 flex flex-col md:flex-row items-center gap-6">
+                        <div class="text-4xl">👥</div>
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-800">The Leadership Team</h3>
+                            <p class="text-slate-700 mt-2">${reportData.overview.founders}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('main-content').innerHTML = content;
+        }
+
+        function renderProduct() {
+            const stepsHtml = reportData.product.steps.map((step, index) => `
+                <div class="flex flex-col items-center text-center p-4 relative z-10">
+                    <div class="w-16 h-16 bg-white border-2 border-orange-500 rounded-full flex items-center justify-center text-2xl shadow-md mb-4 hover:scale-110 transition-transform cursor-pointer group">
+                        ${step.icon}
+                        <div class="absolute bottom-20 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white text-xs p-2 rounded w-32 pointer-events-none">
+                            ${step.desc}
+                        </div>
+                    </div>
+                    <h4 class="font-bold text-slate-800">${step.title}</h4>
+                </div>
+                ${index < 3 ? '<div class="hidden md:block h-1 w-16 bg-orange-200 mt-8"></div>' : ''}
+            `).join('');
+
+            const content = `
+                <div class="fade-in max-w-4xl mx-auto">
+                    <header class="mb-10">
+                        <h2 class="text-3xl md:text-4xl font-serif font-bold text-slate-900 mb-4">${reportData.product.title}</h2>
+                        <p class="text-lg text-slate-600 leading-relaxed">${reportData.product.intro}</p>
+                    </header>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-stone-200 p-8 mb-10">
+                        <h3 class="text-lg font-bold text-stone-500 uppercase tracking-widest mb-8 text-center">The Service Cycle</h3>
+                        <div class="flex flex-col md:flex-row justify-center items-center gap-4">
+                            ${stepsHtml}
+                        </div>
+                        <p class="text-center text-sm text-slate-400 mt-8 italic">Hover over icons for process details</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-slate-800 text-white p-8 rounded-xl">
+                            <h3 class="text-xl font-bold mb-4">Core Offerings</h3>
+                            <ul class="space-y-3">
+                                ${reportData.product.offerings.map(item => `<li class="flex items-center gap-3"><span class="text-orange-400">✓</span> ${item}</li>`).join('')}
+                            </ul>
+                        </div>
+                        <div class="bg-white p-8 rounded-xl border border-stone-200 flex items-center justify-center text-center">
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-800 mb-2">Why Drive Drop?</h3>
+                                <p class="text-slate-600">We don't just fix cars.<br>We fix the <strong>experience</strong>.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('main-content').innerHTML = content;
+        }
+
+        function renderMarket() {
+            const content = `
+                <div class="fade-in max-w-5xl mx-auto">
+                    <header class="mb-8">
+                        <h2 class="text-3xl md:text-4xl font-serif font-bold text-slate-900 mb-4">${reportData.market.title}</h2>
+                        <p class="text-lg text-slate-600 leading-relaxed">${reportData.market.intro}</p>
+                    </header>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <!-- Chart Section -->
+                        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-stone-200 p-6">
+                            <h3 class="font-bold text-slate-800 mb-4 text-center">Competitive Advantage Matrix</h3>
+                            <div class="chart-container">
+                                <canvas id="marketChart"></canvas>
+                            </div>
+                            <p class="text-xs text-center text-slate-400 mt-4">Comparing Drive Drop vs. Traditional Market Options</p>
+                        </div>
+
+                        <!-- Info Column -->
+                        <div class="space-y-4">
+                            <div class="bg-orange-50 p-6 rounded-xl border-l-4 border-orange-500">
+                                <h4 class="font-bold text-orange-800">The Gap</h4>
+                                <p class="text-sm text-slate-700 mt-2">Dealerships are high-quality but expensive and inconvenient. Local mechanics are cheap but lack transparency. Drive Drop fills this void.</p>
+                            </div>
+                            <div class="bg-white p-6 rounded-xl border border-stone-200">
+                                <h4 class="font-bold text-slate-800">Target Audience</h4>
+                                <ul class="text-sm text-slate-600 mt-3 space-y-2">
+                                    <li class="flex justify-between"><span>Busy Professionals</span> <span class="font-semibold">Primary</span></li>
+                                    <li class="flex justify-between"><span>Students/Youth</span> <span class="font-semibold">Secondary</span></li>
+                                    <li class="flex justify-between"><span>Corporate Fleets</span> <span class="font-semibold">Future</span></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('main-content').innerHTML = content;
+
+            // Initialize Chart
+            const ctx = document.getElementById('marketChart').getContext('2d');
+            marketChartInstance = new Chart(ctx, {
+                type: 'radar',
+                data: reportData.market.competitorData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: '#e5e7eb' },
+                            grid: { color: '#e5e7eb' },
+                            pointLabels: {
+                                font: { size: 12, family: "'Outfit', sans-serif" },
+                                color: '#475569'
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 100
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        function renderFinancials() {
+            const content = `
+                <div class="fade-in max-w-5xl mx-auto">
+                    <header class="mb-8">
+                        <h2 class="text-3xl md:text-4xl font-serif font-bold text-slate-900 mb-4">${reportData.financials.title}</h2>
+                        <p class="text-lg text-slate-600 leading-relaxed">${reportData.financials.intro}</p>
+                    </header>
+
+                    <!-- KPI Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                        ${reportData.financials.metrics.map(metric => `
+                            <div class="bg-slate-800 rounded-lg p-6 text-white shadow-lg">
+                                <p class="text-slate-400 text-xs uppercase tracking-wide">${metric.label}</p>
+                                <p class="text-3xl font-bold my-2 text-orange-400">${metric.value}</p>
+                                <p class="text-slate-300 text-sm opacity-80">${metric.desc}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <!-- Main Graph -->
+                    <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="font-bold text-slate-800">Growth Projections (5 Year Horizon)</h3>
+                            <div class="flex gap-2">
+                                <span class="text-xs flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-orange-500"></span> Revenue</span>
+                                <span class="text-xs flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-slate-300"></span> Customers</span>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="financialChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('main-content').innerHTML = content;
+
+            // Initialize Chart
+            const ctx = document.getElementById('financialChart').getContext('2d');
+            financialChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: reportData.financials.chartData.labels,
+                    datasets: [
+                        {
+                            label: 'Projected Revenue Index',
+                            data: reportData.financials.chartData.revenue,
+                            type: 'line',
+                            borderColor: '#ea580c',
+                            backgroundColor: 'rgba(234, 88, 12, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Customer Base Index',
+                            data: reportData.financials.chartData.customers,
+                            backgroundColor: '#cbd5e1',
+                            borderRadius: 4,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { 
+                            type: 'linear', 
+                            display: true, 
+                            position: 'left',
+                            grid: { color: '#f1f5f9' },
+                            title: { display: true, text: 'Revenue Growth Index' }
+                        },
+                        y1: { 
+                            type: 'linear', 
+                            display: true, 
+                            position: 'right', 
+                            grid: { display: false },
+                            title: { display: true, text: 'Customer Volume' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.raw;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderFuture() {
+            const content = `
+                <div class="fade-in max-w-4xl mx-auto">
+                    <header class="mb-10">
+                        <h2 class="text-3xl md:text-4xl font-serif font-bold text-slate-900 mb-4">${reportData.future.title}</h2>
+                        <p class="text-lg text-slate-600 leading-relaxed">${reportData.future.intro}</p>
+                    </header>
+
+                    <div class="relative border-l-2 border-orange-200 ml-4 md:ml-8 space-y-12">
+                        ${reportData.future.milestones.map((milestone, idx) => `
+                            <div class="relative pl-8 md:pl-12 group">
+                                <!-- Node -->
+                                <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-white border-4 border-orange-500 group-hover:scale-125 transition-transform"></div>
+                                
+                                <!-- Content -->
+                                <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-100 hover:border-orange-200 transition-colors">
+                                    <span class="text-xs font-bold text-orange-600 uppercase tracking-widest mb-1 block">${milestone.year}</span>
+                                    <h3 class="text-xl font-bold text-slate-800 mb-2">${milestone.title}</h3>
+                                    <p class="text-slate-600">${milestone.desc}</p>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div class="mt-12 bg-slate-900 rounded-xl p-8 text-center text-white">
+                        <h3 class="text-2xl font-serif mb-4">Join Us on the Journey</h3>
+                        <p class="mb-6 text-slate-300">Drive Drop is ready to scale. With the right investment and support, we will dominate the regional automotive service market.</p>
+                        <a href="tel:9182652265" class="inline-block bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-8 rounded-full transition-colors shadow-lg shadow-orange-900/50">
+                            Contact Founders (9182652265)
+                        </a>
+                    </div>
+                </div>
+            `;
+            document.getElementById('main-content').innerHTML = content;
+        }
+
+        // --- NAVIGATION LOGIC ---
+        function navigate(targetId) {
+            // Update UI State
+            document.querySelectorAll('.nav-item').forEach(btn => {
+                if(btn.dataset.target === targetId) {
+                    btn.classList.add('active', 'bg-orange-50', 'text-orange-600', 'font-semibold');
+                    btn.classList.remove('text-slate-600');
+                } else {
+                    btn.classList.remove('active', 'bg-orange-50', 'text-orange-600', 'font-semibold');
+                    btn.classList.add('text-slate-600');
+                }
+            });
+
+            // Destroy old chart instances to prevent canvas reuse errors
+            if (marketChartInstance) { marketChartInstance.destroy(); marketChartInstance = null; }
+            if (financialChartInstance) { financialChartInstance.destroy(); financialChartInstance = null; }
+
+            // Render Section
+            switch(targetId) {
+                case 'overview': renderOverview(); break;
+                case 'product': renderProduct(); break;
+                case 'market': renderMarket(); break;
+                case 'financials': renderFinancials(); break;
+                case 'future': renderFuture(); break;
+                default: renderOverview();
+            }
+
+            // Mobile menu close on click
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar.classList.contains('-translate-x-full') && window.innerWidth < 768) {
+                sidebar.classList.add('-translate-x-full');
+            }
+        }
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initial Render
+            renderOverview();
+
+            // Mobile Menu Toggle
+            document.getElementById('menu-btn').addEventListener('click', () => {
+                const sidebar = document.getElementById('sidebar');
+                sidebar.classList.toggle('-translate-x-full');
+            });
+        });
+
+    </script>
+</body>
+</html>
